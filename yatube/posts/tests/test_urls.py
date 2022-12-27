@@ -34,16 +34,16 @@ class PostURLTest(TestCase):
     def test_urls_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
         templates_url_names = {
-            'posts/index.html': '/',
-            'posts/group_list.html': f'/group/{self.group.slug}/',
-            'posts/profile.html': f'/profile/{self.user_author}/',
-            'posts/post_detail.html': f'/posts/{self.post.pk}/',
-            'posts/create_post.html': f'/posts/{self.post.pk}/edit/',
-            'posts/create_post.html': '/create/',
+            '/': 'posts/index.html',
+            f'/group/{self.group.slug}/': 'posts/group_list.html',
+            f'/profile/{self.user_author}/': 'posts/profile.html',
+            f'/posts/{self.post.pk}/': 'posts/post_detail.html',
+            f'/posts/{self.post.pk}/edit/': 'posts/create_post.html',
+            '/create/': 'posts/create_post.html',
         }
-        for template, address in templates_url_names.items():
+        for address, template in templates_url_names.items():
             with self.subTest(address=address):
-                response = self.authorized_client.get(address)
+                response = self.author_client.get(address)
                 self.assertTemplateUsed(response, template)
 
     def test_url_exists_at_desired_location(self):
