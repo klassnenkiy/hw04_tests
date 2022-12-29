@@ -56,6 +56,7 @@ class PostViewTest(TestCase):
         """Шаблон index сформирован с правильным контекстом."""
         response = self.guest_client.get(reverse('posts:index'))
         self.assertIn('page_obj', response.context)
+        self.assertEqual(len(response.context['page_obj'].object_list), 1)
         first_post = response.context['page_obj'][0]
         self.assertEqual(first_post, self.post)
         self.assertEqual(first_post.text, self.post.text)
@@ -202,7 +203,7 @@ class PaginatorViewsTest(TestCase):
             ),
         )
         for url in urls:
-            response = self.client.get(url)
+            response = self.guest_client.get(url)
             amount_posts = len(response.context.get('page_obj').object_list)
             self.assertEqual(amount_posts, COUNT_POSTS)
 
@@ -221,6 +222,6 @@ class PaginatorViewsTest(TestCase):
             ) + '?page=2',
         )
         for url in urls:
-            response = self.client.get(url)
+            response = self.guest_client.get(url)
             amount_posts = len(response.context.get('page_obj').object_list)
             self.assertEqual(amount_posts, NUMBER_POSTS_ON_2ND_PAGE)
