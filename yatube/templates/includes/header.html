@@ -46,7 +46,7 @@
         </li>
         {% else %}
         <li class="nav-item"> 
-          <a class="nav-link link-light {% if view_name  == 'users:logout' %}
+          <a class="nav-link link-light {% if view_name  == 'users:login' %}
           active
         {% endif %}" href="{% url 'users:login' %}">Войти</a>
         </li>

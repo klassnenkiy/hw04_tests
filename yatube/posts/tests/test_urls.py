@@ -1,11 +1,8 @@
 from http import HTTPStatus
 
-from django.contrib.auth import get_user_model
 from django.test import TestCase, Client
 
-from posts.models import Group, Post
-
-User = get_user_model()
+from posts.models import Group, Post, User
 
 
 class PostURLTest(TestCase):
@@ -22,6 +19,7 @@ class PostURLTest(TestCase):
         cls.post = Post.objects.create(
             author=cls.user_author,
             text='Тестовый пост',
+            group=cls.group,
         )
 
     def setUp(self):
@@ -42,28 +40,62 @@ class PostURLTest(TestCase):
             '/create/': 'posts/create_post.html',
         }
         for address, template in templates_url_names.items():
-            with self.subTest(address=address):
+            with self.subTest(address=address, template=template):
                 response = self.author_client.get(address)
                 self.assertTemplateUsed(response, template)
 
-    def test_url_exists_at_desired_location(self):
-        """Проверка доступа к страницам"""
-        response_dict = {
-            self.guest_client.get('/'): HTTPStatus.OK,
-            self.guest_client.get(f'/group/{self.group.slug}/'):
-            HTTPStatus.OK,
-            self.guest_client.get(f'/profile/{self.user_author}/'):
-            HTTPStatus.OK,
-            self.guest_client.get(f'/posts/{self.post.pk}/'):
-            HTTPStatus.OK,
-            self.author_client.get(f'/posts/{self.post.pk}/edit/'):
-            HTTPStatus.OK,
-            self.guest_client.get(f'/posts/{self.post.pk}/edit/'):
-            HTTPStatus.FOUND,
-            self.authorized_client.get('/create/'): HTTPStatus.OK,
-            self.guest_client.get('/create/'): HTTPStatus.FOUND,
-            self.guest_client.get('/unexisting_page/'): HTTPStatus.NOT_FOUND,
+    def test_public_url_exists_at_desired_location_for_anonym(self):
+        """публичные адреса доступны неавторизованому клиенту"""
+        url_names = (
+            '/',
+            f'/group/{self.group.slug}/',
+            f'/profile/{self.user_author}/',
+            f'/posts/{self.post.pk}/',
+        )
+        for address in url_names:
+            with self.subTest():
+                response = self.guest_client.get(address)
+                self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    def test_private_url_exists_at_desired_location_for_auth(self):
+        """закрытые адреса доступны авторизованому клиенту
+        (создание поста, редактирование поста созданного этим же юзером)"""
+        url_names = (
+            '/create/',
+            f'/posts/{self.post.pk}/edit/',
+        )
+        for address in url_names:
+            with self.subTest():
+                response = self.author_client.get(address)
+                self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    def test_not_author_redirect(self):
+        """страница редактирования недоступна не-автору
+        и редиректит на просмотр этого же поста"""
+        response = self.authorized_client.get(
+            f'/posts/{self.post.pk}/edit/', follow=True
+        )
+        self.assertRedirects(
+            response,
+            f'/posts/{self.post.pk}/',
+            HTTPStatus.FOUND
+        )
+
+    def test_guest_redirect(self):
+        """"закрытые" адреса (создание поста, редактирование поста)
+        недоступны неавторизованому клиенту
+        и вызывают редирект на страницу входа"""
+        url_names = {
+            f'/posts/{self.post.pk}/edit/':
+            f'/auth/login/?next=/posts/{self.post.pk}/edit/',
+            '/create/': '/auth/login/?next=/create/',
         }
-        for response, status_code in response_dict.items():
-            with self.subTest(response=response):
-                self.assertEqual(response.status_code, status_code)
+        for address, redirect in url_names.items():
+            with self.subTest(address=address, redirect=redirect):
+                response = self.guest_client.get(address, follow=True)
+                self.assertRedirects(response, redirect, HTTPStatus.FOUND)
+
+    def test_unexisting_page_url_redirect(self):
+        """несуществующий адрес недоступен"""
+        response = self.guest_client.get('/unexisting_page/')
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)

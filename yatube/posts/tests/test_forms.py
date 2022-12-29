@@ -1,10 +1,7 @@
-from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from posts.models import Group, Post
-
-User = get_user_model()
+from posts.models import Group, Post, User
 
 
 class PostFormTest(TestCase):
@@ -18,11 +15,6 @@ class PostFormTest(TestCase):
             slug='test_slug',
             description='Тестовое описание',
         )
-        cls.post = Post.objects.create(
-            author=cls.user,
-            text='Тестовый пост',
-            group=cls.group,
-        )
 
     def setUp(self):
         self.guest_client = Client()
@@ -35,27 +27,37 @@ class PostFormTest(TestCase):
         """Валидная форма создает запись"""
         posts_count = Post.objects.count()
         form_data = {
-            'text': 'Тестовый пост',
-
+            'text': 'Тестовый пост Тестовый пост',
+            'group': self.group.pk,
         }
-        response = self.authorized_client.post(
+        self.authorized_client.post(
             reverse('posts:post_create'),
             data=form_data,
             follow=True
         )
-        self.assertRedirects(response, reverse(
-            'posts:profile',
-            kwargs={'username': self.post.author}))
         self.assertEqual(Post.objects.count(), posts_count + 1)
-        self.assertTrue(Post.objects.filter(text='Тестовый пост').exists())
+        post = Post.objects.latest('id')
+        self.assertEqual(post.text, form_data['text'])
+        self.assertEqual(post.author, self.user)
+        self.assertEqual(post.group.pk, form_data['group'])
 
     def test_post_edit_change_db(self):
         """Происходит изменение поста с post_id в базе данных"""
-        posts_count = Post.objects.count()
+        self.post = Post.objects.create(
+            text='Текст поста для post_edit',
+            author=self.user_author,
+            group=PostFormTest.group,
+        )
+        self.another_group = Group.objects.create(
+            title='Другая тестовая группа',
+            slug='test_slug_2',
+            description='Всё переплетено, но не предопределено',
+        )
         form_data = {
             'text': 'Обновленный пост',
+            'group': self.another_group.pk,
         }
-        response = self.authorized_client.post(
+        response = self.author_client.post(
             reverse('posts:post_edit', kwargs={'post_id': self.post.pk}),
             data=form_data,
             follow=True
@@ -65,7 +67,7 @@ class PostFormTest(TestCase):
                 'posts:post_detail', kwargs={'post_id': self.post.pk}
             )
         )
-        self.assertEqual(Post.objects.count(), posts_count)
-        self.assertTrue(Post.objects
-                        .filter(text=form_data['text'], pk=self.post.pk)
-                        .exists())
+        post = Post.objects.latest('id')
+        self.assertEqual(post.text, form_data['text'])
+        self.assertEqual(post.author, self.user_author)
+        self.assertEqual(post.group.pk, form_data['group'])
