@@ -3,7 +3,6 @@ from django.urls import reverse
 from django import forms
 
 from posts.models import Group, Post, User
-from yatube.settings import COUNT_POSTS
 
 
 class PostViewTest(TestCase):
@@ -168,9 +167,6 @@ class PaginatorViewsTest(TestCase):
     def setUp(self):
         self.guest_client = Client()
 
-    # как ты не смог сделать, весь день сидел пока только так получилось
-    # буду конечно еще искать про список кортежей в цикле, и пробовать
-    # но если подскажешь, как сделать как ты предложил, буду благодарен))
     def test_pages_contains_ten_n_three_records(self):
         """Проверка: количество постов на первой странице равно 10
         на второй странице должно быть три поста"""
@@ -185,17 +181,16 @@ class PaginatorViewsTest(TestCase):
                 'posts:profile', kwargs={'username': self.user}
             ),
         ]
-        # pages_posts = [
-        #        (1, 10),
-        #        (2, 3)
-        # ]
-        NUMBER_POSTS_ON_2ND_PAGE = 3
+        pages_posts = [
+            (1, 10),
+            (2, 3)
+        ]
         for url in urls:
-            # for page in pages_posts:
-            with self.subTest(url=url):
-                self.assertEqual(len(self.guest_client.get(
-                    url + '?page=' + str(1)).context.get('page_obj')),
-                    COUNT_POSTS)
-                self.assertEqual(len(self.guest_client.get(
-                    url + '?page=' + str(2)).context.get('page_obj')),
-                    NUMBER_POSTS_ON_2ND_PAGE)
+            for page, expected_amount in pages_posts:
+                with self.subTest(url=url):
+                    self.assertEqual(len(self.guest_client.get(
+                        url + '?page=' + str(page)).context.get('page_obj')),
+                        expected_amount)
+                    self.assertEqual(len(self.guest_client.get(
+                        url + '?page=' + str(page)).context.get('page_obj')),
+                        expected_amount)
