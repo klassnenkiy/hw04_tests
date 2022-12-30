@@ -191,6 +191,3 @@ class PaginatorViewsTest(TestCase):
                     self.assertEqual(len(self.guest_client.get(
                         url + '?page=' + str(page)).context.get('page_obj')),
                         expected_amount)
-                    self.assertEqual(len(self.guest_client.get(
-                        url + '?page=' + str(page)).context.get('page_obj')),
-                        expected_amount)
