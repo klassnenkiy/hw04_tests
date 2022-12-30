@@ -65,4 +65,4 @@ class GroupModelTest(TestCase):
         """Проверяем, что у моделей группы корректно работает __str__."""
         group = GroupModelTest.group
         expected_object_name = group.title
-        self.assertEqual(expected_object_name, str(group))
+        self.assertEqual(str(group), expected_object_name)

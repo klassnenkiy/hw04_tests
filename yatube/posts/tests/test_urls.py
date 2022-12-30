@@ -1,6 +1,7 @@
 from http import HTTPStatus
 
 from django.test import TestCase, Client
+from django.urls import reverse
 
 from posts.models import Group, Post, User
 
@@ -86,14 +87,15 @@ class PostURLTest(TestCase):
         недоступны неавторизованому клиенту
         и вызывают редирект на страницу входа"""
         url_names = {
-            f'/posts/{self.post.pk}/edit/':
-            f'/auth/login/?next=/posts/{self.post.pk}/edit/',
-            '/create/': '/auth/login/?next=/create/',
+            f'/posts/{self.post.pk}/edit/',
+            '/create/'
         }
-        for address, redirect in url_names.items():
-            with self.subTest(address=address, redirect=redirect):
-                response = self.guest_client.get(address, follow=True)
-                self.assertRedirects(response, redirect, HTTPStatus.FOUND)
+        for url in url_names:
+            with self.subTest(url=url):
+                response = self.guest_client.get(url, follow=True)
+                self.assertRedirects(response,
+                                     reverse('users:login') + '?next=' + url,
+                                     HTTPStatus.FOUND)
 
     def test_unexisting_page_url_redirect(self):
         """несуществующий адрес недоступен"""
