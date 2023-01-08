@@ -80,7 +80,7 @@ class PostViewTest(TestCase):
         response = self.guest_client.get(
             reverse('posts:profile', kwargs={'username': self.post.author})
         )
-        self.assertIn('author', response.context) 
+        self.assertIn('author', response.context)
         self.assertEqual(response.context['author'], self.user)
         self.assertIn('page_obj', response.context)
         self.assertEqual(len(response.context['page_obj'].object_list), 1)
@@ -100,15 +100,12 @@ class PostViewTest(TestCase):
         self.assertEqual(post_object.group, self.post.group)
         self.assertEqual(post_object.pk, self.post.pk)
 
-    # как можно объединить лучше?) в create нет post в контексте (key error),
-    # поэтому в цикл не вставляется, только такое смог сделать
     def test_create_n_post_edit_show_correct_context(self):
         """Страницы create и post_edit формируются с корректным контекстом."""
         post_edit = reverse('posts:post_edit',
                             kwargs={'post_id': self.post.pk})
         response_edit = self.authorized_client.get(post_edit)
-        post_object = response_edit.context['post']
-        self.assertEqual(post_object, self.post)
+        self.assertEqual(response_edit.context['post'], self.post)
         self.assertTrue(response_edit.context.get('is_edit'))
         urls = [post_edit, reverse('posts:post_create')]
         for url in urls:
