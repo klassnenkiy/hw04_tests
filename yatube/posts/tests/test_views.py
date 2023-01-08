@@ -68,8 +68,7 @@ class PostViewTest(TestCase):
             reverse('posts:group', kwargs={'slug': self.group.slug})
         )
         self.assertIn('group', response.context)
-        group_object = response.context['group']
-        self.assertEqual(group_object, self.group)
+        self.assertEqual(response.context['group'], self.group)
         self.assertIn('page_obj', response.context)
         self.assertEqual(len(response.context['page_obj'].object_list), 1)
         first_post = response.context['page_obj'][0]
@@ -81,9 +80,8 @@ class PostViewTest(TestCase):
         response = self.guest_client.get(
             reverse('posts:profile', kwargs={'username': self.post.author})
         )
-        self.assertIn('author', response.context)
-        author_object = response.context['author']
-        self.assertEqual(author_object, self.user)
+        self.assertIn('author', response.context) 
+        self.assertEqual(response.context['author'], self.user)
         self.assertIn('page_obj', response.context)
         self.assertEqual(len(response.context['page_obj'].object_list), 1)
         first_post = response.context['page_obj'][0]
@@ -124,10 +122,6 @@ class PostViewTest(TestCase):
                     form_field = response.context['form'].fields[value]
                     self.assertIsInstance(form_field, expected)
                     self.assertIn('form', response.context)
-
-    # def test_new_post_in_group_on_pages(self):
-    # да понял, лишний, ты просто по нему ревью делал. (спасибо)
-    # я и решил переделать. (этот комментарий удалю)
 
     def test_new_post_not_in_group_list(self):
         """Новый пост не попал в группу, для которой не был предназначен"""
@@ -187,7 +181,7 @@ class PaginatorViewsTest(TestCase):
         ]
         for url in urls:
             for page, expected_amount in pages_posts:
-                with self.subTest(url=url):
+                with self.subTest(url=url, page=page):
                     self.assertEqual(len(self.guest_client.get(
                         url + '?page=' + str(page)).context.get('page_obj')),
                         expected_amount)
